@@ -1,0 +1,1481 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>VideoREPA: Learning Physics for Video Generation through Relational Alignment with Foundation Models</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- Open Graph -->
+        <meta property="og:url" content="https://VideoREPA.github.io/" />
+        <meta property="og:image" content="https://VideoREPA.github.io/static/image/image.png" />
+        <meta property="og:title" content="VideoREPA" />
+        <meta property="og:description" content="Learning Physics for Video Generation through Relational Alignment with Foundation Models" />
+
+        <!-- 只保留MathJax，移除KaTeX -->
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+        <script type="text/javascript" id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>
+            MathJax = {
+                tex: {
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                    processEscapes: true,
+                    processEnvironments: true
+                },
+                options: {
+                    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+                }
+            };
+            
+            // 确保MathJax在页面加载完成后重新渲染
+            window.addEventListener('load', function() {
+                if (typeof MathJax !== 'undefined') {
+                    MathJax.typesetPromise();
+                }
+            });
+        </script>
+
+        <script src="./static/js/distill_template.v2.js"></script>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <script src="https://d3js.org/d3-collection.v1.min.js"></script>
+        <script src="https://rawgit.com/nstrayer/slid3r/master/dist/slid3r.js"></script>
+
+        <script src="./static/js/details-toggle.js"></script>
+
+        <script defer="" src="./static/js/hider.js"></script>
+        <script src="./static/js/image_interact.js"></script>
+        <script src="./static/js/switch_videos.js"></script>
+
+        <link rel="stylesheet" href="./static/css/style.css">
+        <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+
+        <script defer src="./static/js/fontawesome.all.min.js"></script>
+
+        <!-- medium zoom -->
+        <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+        <script defer src="./static/js/medium-zoom.min.js"></script>
+        <script defer src="./static/js/zoom.js"></script>
+
+        <style>
+            .section { max-width: 800px; margin: auto; padding: 2em 1em; font-size: 1.12em; }
+            .text { line-height: 1.6; }
+            
+            /* Hide controls on hover for the specific video with class 'no-controls' */
+            .no-controls::-webkit-media-controls {
+                display: none !important;
+            }
+            .no-controls:hover::-webkit-media-controls {
+                display: none !important;
+            }
+            /* Applying the same for Firefox */
+            .no-controls::-moz-media-controls {
+                display: none !important;
+            }
+            .no-controls:hover::-moz-media-controls {
+                display: none !important;
+            }
+            #twitter_container {
+                column-width: 250px;
+                column-gap: 20px;
+            }
+            .table-container {
+                margin: 20px 0;
+                overflow-x: auto;
+            }
+            
+            .table-container table {
+                border-collapse: collapse;
+                width: 100%;
+                font-size: 0.9em;
+            }
+            
+            .table-container th, .table-container td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: center;
+            }
+            
+            .table-container th {
+                background-color: #f5f5f5;
+                font-weight: bold;
+            }
+            
+            .table-container tr:hover {
+                background-color: #f5f5f5;
+            }
+            
+            .table-container caption {
+                margin-bottom: 10px;
+                text-align: left;
+                font-weight: bold;
+            }
+
+            .data-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+                font-size: 0.9em;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 4px 8px;
+                border: 1px solid #ddd;
+                text-align: center;
+                line-height: 1.1;
+                vertical-align: middle;
+            }
+
+            .data-table th {
+                background-color: #f5f5f5;
+                font-weight: bold;
+                padding: 6px 8px;
+            }
+
+            .data-table tr:hover {
+                background-color: #f5f5f5;
+            }
+
+            .data-table td:first-child {
+                padding: 4px 12px;
+                text-align: left;
+                font-size: 0.85em;
+                line-height: 1.0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header-wrapper">
+            <div class="header-container" id="header-container">
+                <div class="header-content">
+                    <h1 style="margin-top: 0px; font-size: xxx-large;">VideoREPA</h1>
+                    <h2 style="margin-top: 0px; font-size: xx-large;">Learning Physics for Video Generation through Relational Alignment with Foundation Models</h2>
+                    <p>
+                      We propose a novel framework called VideoREPA that distills physics understanding capability from video understanding foundation models into T2V models by aligning token-level relations, enabling more physics-plausible video generation. Our contributions can be summarized as follows:
+                    </p>
+                    <div class="contributions">
+                        <div class="contribution-item">
+                            <h3>🔍 Physics Understanding Gap</h3>
+                            <p>We identify an essential gap in physics understanding between self-supervised VFMs and T2V models, proposing the first method to bridge video understanding models and T2V models.</p>
+                        </div>
+                        <div class="contribution-item">
+                            <h3>💡 Token Relation Distillation</h3>
+                            <p>We introduce VideoREPA, utilizing Token Relation Distillation loss to effectively distill physics knowledge from VFMs through token-relational alignment. 
+                              This closes the physics understanding gap and enables more physics-plausible generation.</p> 
+                        </div>
+                        <div class="contribution-item">
+                            <h3>🌟 First Method that Successfully Applying <a href="https://sihyun.me/REPA/" target="_blank">REPA</a> into Video Generation</h3>
+                            <p>Our TRD loss overcomes key limitations of directly applying REPA to video generation, <strong>particularly for finetuning pre-trained models</strong> (compared to from-scratch training in existing REPA methods) and capturing essential temporal dynamics.</p>
+                        </div>
+                    </div>
+                    
+
+
+                    <div class="button-container", style="text-align: center;">
+                        <a href="https://arxiv.org/abs/[YourPaperID]" class="button paper-link" target="_blank">
+                            <span class="icon is-small">
+                                <i class="ai ai-arxiv"></i>
+                            </span>
+                            <span>arXiv</span>
+                        </a>
+                        <a href="static/VideoREPA.pdf" class="button paper-link" target="_blank">
+                            <span class="icon is-small">
+                                <i class="fas fa-file-pdf"></i>
+                            </span>
+                            <span>PDF</span>
+                        </a>
+                        <a href="https://github.com/aHapBean/VideoREPA" class="button" target="_blank">
+                            <span class="icon is-small">
+                                <i class="fab fa-github"></i>
+                            </span>
+                            <span>Code</span>
+                        </a>
+                        <!-- <a href="#" class="button" target="_blank">
+                            <span class="icon is-small">
+                                <img src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt="Hugging Face" style="height: 1em;">
+                            </span>
+                            <span>Data</span>
+                        </a>                         -->
+                    </div>
+
+
+            </div>
+            <div class="header-image">
+                <img draggable="false" src="static/image/image.png" class="teaser-image" width="100%">
+            </div>
+        </div>
+    </div>
+
+<d-article>
+
+    <div class="byline">
+        <div class="byline-container">
+            <div class="is-size-5 publication-authors">
+                <div style="margin-bottom: px;">
+                    <span class="author-block">
+                        <a href="#" class="author-link" target="_blank" style="color: darkgreen;">Xiangdong Zhang<sup>†</sup><sup style="color:#6fbf73;">1</sup></a>,
+                    </span>
+                    <span class="author-block">
+                        <a href="#" class="author-link" target="_blank" style="color: darkgreen;">Jiaqi Liao<sup style="color:#6fbf73;"></sup></a>,
+                    </span>
+                    <span class="author-block">
+                        <a href="#" class="author-link" target="_blank" style="color: darkgreen;">Shaofeng Zhang<sup style="color:#6fbf73;">1</sup></a>,
+                    </span>
+                    <span class="author-block">
+                        <a href="#" class="author-link" target="_blank" style="color: darkgreen;">Fanqing Meng<sup style="color:#ffac33;">2</sup></a>,
+                    </span>
+                    <span class="author-block">
+                        <a href="#" class="author-link" target="_blank" style="color: darkgreen;">Xiangpeng Wan<sup style="color:#ff6b6b;">3</sup></a>,
+                    </span>
+                    <span class="author-block">
+                        <a href="#" class="author-link" target="_blank" style="color: darkgreen;">Junchi Yan<sup style="color:#6fbf73;">1</sup></a>,
+                    </span>
+                    <span class="author-block">
+                        <a href="#" class="author-link" target="_blank" style="color: darkgreen;">Yu Cheng<sup style="color:#9b59b6;">4</sup><sup>✉</sup></a>
+                    </span>
+                </div>
+            </div>
+    
+            <div class="is-size-5 publication-authors">
+                <span class="author-block"><sup style="color:#6fbf73;">1</sup>Dept. of CSE &amp; School of AI &amp; MoE Key Lab of AI, Shanghai Jiao Tong University,</span>
+                <span class="author-block"><sup style="color:#ffac33;">2</sup>Shanghai Jiao Tong University,</span>
+                <span class="author-block"><sup style="color:#ff6b6b;">3</sup>NetMind.AI,</span>
+                <span class="author-block"><sup style="color:#9b59b6;">4</sup>The Chinese University of Hong Kong</span>
+            </div>
+    
+            <div class="is-size-5 publication-authors">
+                <span class="author-note" style="color: black;">†Interns at Shanghai AI Laboratory.</span>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- for Introduction -->
+    <d-figure id="figure-1">
+      <figure>
+          <img data-zoomable="" draggable="false" src="static/image/teaser_final_00.jpg" alt="VideoREPA Teaser Figure" width="100%">
+          <figcaption>
+              <strong>Figure 1:</strong> <i>Left:</i> Visual comparison showing CogVideoX baseline, CogVideoX+REPA, and our VideoREPA results. <i>Right:</i> Physics understanding evaluation on Object Contact Prediction task demonstrating the gap between VideoMAEv2 and CogVideoX, which VideoREPA successfully bridges. The chance level accuracy is 50%.
+          </figcaption>
+      </figure>
+    </d-figure>
+
+    <div style="font-family: sans-serif;">
+
+      <!-- <h5 class="text" style="text-align: center; font-size: 1.5em; margin-bottom: 15px;">Videos in Fig.1: CogVideoX vs. CogVideoX+REPA loss vs. VideoREPA.</h5> -->
+      <h5 class="text" style="text-align: center; font-size: 1.5em; margin-bottom: 15px;">
+        Videos in Fig.1:
+        <span class="method-tag">CogVideoX</span> vs.
+        <span class="method-tag">CogVideoX+REPA loss</span> vs.
+        <span class="method-tag">VideoREPA</span>
+      </h5>
+      <figure style="text-align: center; margin-bottom: 20px;">
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_cogvideox_1.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        &nbsp;
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_repa_1.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        &nbsp;
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_videorepa_1.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        <!-- <figcaption style="margin-top: 8px; text-align: left;">
+          <strong>Prompt:</strong> Leather glove catching a hard baseball. (Detail: On a bright, sunlit baseball field, a leather glove, worn and well-used, hovers in the air. The camera follows the fast-moving trajectory of a hard-thrown baseball as it speeds toward the glove. With a sharp snap, the glove closes around the ball, creating a satisfying thud as the impact is absorbed. The glove holds the ball securely, its leather creasing slightly as the baseball settles in, the motion fluid and precise in the excitement of the catch.).
+        </figcaption> -->
+        <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+          <button class="toggle-detail-btn" aria-expanded="false">
+            <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> Leather glove catching a hard baseball.</span>
+          </button>
+          <div class="detail-text">
+            Detail: On a bright, sunlit baseball field, a leather glove, worn and well-used, hovers in the air. The camera follows the fast-moving trajectory of a hard-thrown baseball as it speeds toward the glove. With a sharp snap, the glove closes around the ball, creating a satisfying thud as the impact is absorbed. The glove holds the ball securely, its leather creasing slightly as the baseball settles in, the motion fluid and precise in the excitement of the catch.
+          </div>
+        </figcaption>
+      </figure>
+    
+      <figure style="text-align: center; margin-bottom: 20px;">
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_cogvideox_2.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        &nbsp;
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_repa_2.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        &nbsp;
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_videorepa_2.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        <!-- <figcaption style="margin-top: 8px; text-align: left;">
+          <strong>Prompt:</strong> Maple syrup drizzling from a bottle onto pancakes. (Detail: On a cozy wooden breakfast table bathed in warm morning light, a stack of fluffy golden pancakes rests on a white ceramic plate. Above them, a hand tilts a glass bottle filled with thick, amber-colored maple syrup. The syrup flows slowly from the spout in a smooth, glossy stream, cascading over the top pancake and spreading across the surface. The camera captures the rich liquid soaking into the pancakes’ soft texture, forming shiny pools in the ridges and around the edges. A pat of butter begins to melt on top, adding a soft glisten to the scene.)
+        </figcaption> -->
+        <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+          <button class="toggle-detail-btn" aria-expanded="false">
+            <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> Maple syrup drizzling from a bottle onto pancakes.</span>
+          </button>
+          <div class="detail-text">
+            Detail: On a cozy wooden breakfast table bathed in warm morning light, a stack of fluffy golden pancakes rests on a white ceramic plate. Above them, a hand tilts a glass bottle filled with thick, amber-colored maple syrup. The syrup flows slowly from the spout in a smooth, glossy stream, cascading over the top pancake and spreading across the surface. The camera captures the rich liquid soaking into the pancakes’ soft texture, forming shiny pools in the ridges and around the edges. A pat of butter begins to melt on top, adding a soft glisten to the scene.
+          </div>
+        </figcaption>
+      </figure>
+    
+      <figure style="text-align: center; margin-bottom: 20px;">
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_cogvideox_3.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        &nbsp;
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_repa_3.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        &nbsp;
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_videorepa_3.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        <!-- <figcaption style="margin-top: 8px; text-align: left;">
+          <strong>Prompt:</strong> Glass shatters on the floor. (Detail: On a tiled floor, a clear glass tumbler slips from a countertop and crashes downward. Upon hitting the hard surface, it breaks into sharp fragments with a loud, high-pitched shatter. Tiny pieces scatter in all directions, some bouncing slightly before coming to rest.)
+        </figcaption> -->
+        <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+          <button class="toggle-detail-btn" aria-expanded="false">
+            <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> Glass shatters on the floor.</span>
+          </button>
+          <div class="detail-text">
+            Detail: On a tiled floor, a clear glass tumbler slips from a countertop and crashes downward. Upon hitting the hard surface, it breaks into sharp fragments with a loud, high-pitched shatter. Tiny pieces scatter in all directions, some bouncing slightly before coming to rest.
+          </div>
+        </figcaption>
+      </figure>
+    
+      <figure style="text-align: center; margin-bottom: 20px;">
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_cogvideox_4.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        &nbsp;
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_repa_4.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        &nbsp;
+        <video poster="" autoplay controls muted width="32%">
+          <source src="static/videos/teaser/ts_videorepa_4.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        <!-- <figcaption style="margin-top: 8px; text-align: left;">
+          <strong>Prompt:</strong> A child runs and catches a brightly colored frisbee... (Detail: A vibrant outdoor scene unfolds, showcasing a young child clad in a striking red and white striped shirt, running with unbridled enthusiasm across a lush green lawn. The camera, held in a steady, medium shot, captures the child's animated expressions as they dash towards a colorful frisbee, its bright yellow and blue design contrasting beautifully against the verdant backdrop. The frisbee, initially tossed from the left, arcs gracefully through the air, drawing the child's eager gaze. As the child's arms stretch wide, they deftly catch the frisbee, their momentum halting abruptly, feet planted firmly on the ground. The scene is bathed in warm, golden-hour light, enhancing the vivid colors and creating a serene atmosphere, while the gentle rustle of leaves whispers in the background, encapsulating the joy of a playful afternoon.)
+        </figcaption> -->
+        <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+          <button class="toggle-detail-btn" aria-expanded="false">
+            <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A child runs and catches a brightly colored frisbee...</span>
+          </button>
+          <div class="detail-text">
+            Detail: A vibrant outdoor scene unfolds, showcasing a young child clad in a striking red and white striped shirt, running with unbridled enthusiasm across a lush green lawn. The camera, held in a steady, medium shot, captures the child's animated expressions as they dash towards a colorful frisbee, its bright yellow and blue design contrasting beautifully against the verdant backdrop. The frisbee, initially tossed from the left, arcs gracefully through the air, drawing the child's eager gaze. As the child's arms stretch wide, they deftly catch the frisbee, their momentum halting abruptly, feet planted firmly on the ground. The scene is bathed in warm, golden-hour light, enhancing the vivid colors and creating a serene atmosphere, while the gentle rustle of leaves whispers in the background, encapsulating the joy of a playful afternoon.
+          </div>
+        </figcaption>
+      </figure>    
+    </div>    
+
+    <p class="text abstract" style="margin-top: 3%;">
+      <span style="color: blue;"<strong>Abstract</strong></span><br>
+      Recent advancements in text-to-video (T2V) diffusion models have enabled high-fidelity and realistic video synthesis. However, current T2V models often struggle to generate physically plausible content due to their limited inherent ability to accurately understand physics. 
+      
+      <strong>We found that while the representations within T2V models possess some capacity for physics understanding, they lag significantly behind those from recent video self-supervised learning methods.</strong> 
+      To this end, we propose a novel framework called <strong>VideoREPA</strong>, which distills physics understanding capability from video understanding foundation models into T2V models by aligning token-level relations. This closes the physics understanding gap and enables more physics-plausible generation. Specifically, we introduce the Token Relation Distillation (TRD) loss, leveraging spatio-temporal alignment to provide soft guidance suitable for finetuning powerful pre-trained T2V models—a critical departure from prior representation alignment (REPA) methods. To our knowledge, VideoREPA is the first REPA method designed for finetuning T2V models and specifically for injecting physical knowledge. Empirical evaluations show that VideoREPA substantially enhances the physics commonsense of baseline method, CogVideoX, achieving significant improvement on relevant benchmarks and demonstrating a strong capacity for generating videos consistent with intuitive physics.
+    </p>
+
+
+    <!-- Framework Figure placeholder -->
+    <!-- <div style="text-align: center; margin: 2em 0;">
+        <img src="static/image/videorepa_overview_00.jpg" alt="VideoREPA Framework Overview" style="width: 80%; max-width: 700px;">
+        
+        <b>Figure 2: Overview of VideoREPA framework. Our VideoREPA enhances physics in T2V models by distilling physics knowledge from pre-trained SSL video encoders. We apply Token Relation Distillation (TRD) loss to align pairwise token similarities between video SSL representations and intermediate features in diffusion transformer blocks. Within each representation, tokens form spatial relations with other tokens in the same latent frame and temporal relations with tokens in other latent frames.</b>
+    </div> -->
+    <d-figure id="figure-2">
+      <figure> <!-- 可选：figure居中 -->
+          <!-- 使用 style="width: 70%;" -->
+          <img data-zoomable="" draggable="false" src="static/image/videorepa_overview_00.jpg" alt="VideoREPA Teaser Figure" style="width: 70%; display: block; margin: 0 auto;">
+          <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Figure 2:</strong> Overview of VideoREPA framework. Our VideoREPA enhances physics in T2V models by distilling physics knowledge from pre-trained SSL video encoders. We apply Token Relation Distillation (TRD) loss to align pairwise token similarities between video SSL representations and intermediate features in diffusion transformer blocks. Within each representation, tokens form spatial relations with other tokens in the same latent frame and temporal relations with tokens in other latent frames.
+          </figcaption>
+      </figure>
+    </d-figure>
+
+    <div style="font-family: sans-serif;">
+
+        <!-- <h5 class="text" style="text-align: center; font-size: 1.5em; margin-bottom: 15px;">Qualitative Comparisons among Baseline, REPA and VideoREPA (ours)</h5>
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_cogvideox_1.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_repa_1.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_videorepa_1.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> Leather glove catching a hard baseball (detail: ).
+          </figcaption>
+        </figure>
+      
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_cogvideox_2.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_repa_2.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_videorepa_2.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> Maple syrup drizzling from a bottle onto pancakes.
+          </figcaption>
+        </figure>
+      
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_cogvideox_3.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_repa_3.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_videorepa_3.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> Glass shatters on the floor.
+          </figcaption>
+        </figure>
+      
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_cogvideox_4.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_repa_4.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/teaser/ts_videorepa_4.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> A child runs and catches a brightly colored frisbee...
+          </figcaption>
+        </figure> -->
+        
+        <!-- Main results -->
+        <!-- <h5 class="text" style="text-align: center; font-size: 1.5em; margin-bottom: 15px; margin-top: 30px;">Qualitative Comparison: HunyuanVideo vs. CogVideoX vs. VideoREPA</h5> -->
+
+        <h5 class="text" style="text-align: center; font-size: 1.5em; margin-bottom: 15px;">
+          Qualitative Comparison:
+          <span class="method-tag">HunyuanVideo</span> vs.
+          <span class="method-tag">CogVideoX</span> vs.
+          <span class="method-tag">VideoREPA</span>
+        </h5>
+        
+        <!-- 尝试加上边框 -->
+        <!-- <div>
+          <figure class="video-row-container" style="/* text-align: center; (Flex will handle this) */ margin-bottom: 20px;">
+            <figure class="semantic-video-card">
+              <video poster="" autoplay controls muted style="width: 100%;">
+                <source src="static/videos/main_results/mn_hunyuan_1.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+              <figcaption style="margin-top: 8px; text-align: left;">
+                <strong>CogVideoX 1</strong>
+              </figcaption>
+            </figure>
+            <figure class="semantic-video-card">
+              <video poster="" autoplay controls muted style="width: 100%;">
+                <source src="static/videos/main_results/mn_cogvideox_1.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+              <figcaption style="margin-top: 8px; text-align: left;">
+                <strong>CogVideoX 2</strong>
+              </figcaption>
+            </figure>
+            <figure class="semantic-video-card">
+              <video poster="" autoplay controls muted style="width: 100%;">
+                <source src="static/videos/main_results/mn_videorepa_1.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+              <figcaption style="margin-top: 8px; text-align: left;">
+                <strong>CogVideoX 3</strong>
+              </figcaption>
+            </figure>
+            <figcaption class="prompt-caption" style="margin-top: 8px;"> 
+              <strong>Prompt:</strong> Honey diffusing into warm milk. (Models: HunyuanVideo, CogVideoX, VideoREPA)
+            </figcaption> 
+          </figure>
+          <p class="text">
+            <strong>Prompt:</strong> Honey diffusing into warm milk. (Models: HunyuanVideo, CogVideoX, VideoREPA)
+          </p>
+        </div> -->
+
+        <figure style="text-align: center; margin-bottom: 20px;">
+            <video poster="" autoplay controls muted width="32%">
+              <source src="static/videos/main_results/mn_hunyuan_1.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          &nbsp;
+            <video poster="" autoplay controls muted width="32%">
+              <source src="static/videos/main_results/mn_cogvideox_1.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          &nbsp;
+            <video poster="" autoplay controls muted width="32%">
+              <source src="static/videos/main_results/mn_videorepa_1.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> Honey diffusing into warm milk. (Detail: In a cozy kitchen, a clear glass jar of golden honey is held above a shallow bowl of warm milk. As the honey is slowly poured, it drips in thick, viscous strands, landing gently on the surface of the milk. The honey, initially distinct with its amber hue, begins to diffuse and swirl into the milk, creating a mesmerizing pattern. The camera focuses on the swirling motion, capturing the gradual blending of the honey as it dissolves into the warm liquid, leaving behind a soft, creamy texture. The steam rises from the milk, enhancing the warmth and calmness of the moment.)
+          </figcaption> -->
+          <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+            <button class="toggle-detail-btn" aria-expanded="false">
+              <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> Honey diffusing into warm milk.</span>
+            </button>
+            <div class="detail-text">
+              Detail: In a cozy kitchen, a clear glass jar of golden honey is held above a shallow bowl of warm milk. As the honey is slowly poured, it drips in thick, viscous strands, landing gently on the surface of the milk. The honey, initially distinct with its amber hue, begins to diffuse and swirl into the milk, creating a mesmerizing pattern. The camera focuses on the swirling motion, capturing the gradual blending of the honey as it dissolves into the warm liquid, leaving behind a soft, creamy texture. The steam rises from the milk, enhancing the warmth and calmness of the moment.
+            </div>
+          </figcaption>
+        </figure>
+      
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_hunyuan_2.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_cogvideox_2.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_videorepa_2.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> A cylindrical metal container rolls down a grassy hill, stopping near a small bush. (Detail: In a serene, sunlit landscape, a cylindrical metal container, its surface gleaming with a metallic sheen, rolls down a gently sloping hill covered in lush, vibrant green grass. The camera captures the container's dynamic descent, its circular form glinting in the golden-hour light, as it gracefully navigates the uneven terrain. The background features a tranquil forest, where tall, slender trees sway gently, their leaves whispering in the breeze, while a small, delicate bush stands sentinel at the base of the hill. The scene is bathed in a warm, golden hue, enhancing the container's metallic reflections and the rich textures of the grass. As the container comes to a halt near the bush, the camera remains static, allowing the viewer to appreciate the harmonious interplay of nature and man-made object, creating a poignant moment of stillness amidst the gentle motion.)
+          </figcaption> -->
+          <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+            <button class="toggle-detail-btn" aria-expanded="false">
+              <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A cylindrical metal container rolls down a grassy hill, stopping near a small bush.</span>
+            </button>
+            <div class="detail-text">
+              Detail: In a serene, sunlit landscape, a cylindrical metal container, its surface gleaming with a metallic sheen, rolls down a gently sloping hill covered in lush, vibrant green grass. The camera captures the container's dynamic descent, its circular form glinting in the golden-hour light, as it gracefully navigates the uneven terrain. The background features a tranquil forest, where tall, slender trees sway gently, their leaves whispering in the breeze, while a small, delicate bush stands sentinel at the base of the hill. The scene is bathed in a warm, golden hue, enhancing the container's metallic reflections and the rich textures of the grass. As the container comes to a halt near the bush, the camera remains static, allowing the viewer to appreciate the harmonious interplay of nature and man-made object, creating a poignant moment of stillness amidst the gentle motion.
+            </div>
+          </figcaption>
+        </figure>
+      
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_hunyuan_3.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_cogvideox_3.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_videorepa_3.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> Pencil rolls around on a flat desk. (Detail: On a smooth wooden desk, a solitary pencil slowly rolls in circles, its wooden surface catching the light. The camera focuses on the pencil as it moves gently, its eraser end tapping against the desk, causing it to shift slightly in random directions. The pencil continues its quiet movement, rolling aimlessly as the desk remains still, the sound of its soft tapping filling the space.)
+          </figcaption> -->
+          <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+            <button class="toggle-detail-btn" aria-expanded="false">
+              <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> Pencil rolls around on a flat desk.</span>
+            </button>
+            <div class="detail-text">
+              Detail: On a smooth wooden desk, a solitary pencil slowly rolls in circles, its wooden surface catching the light. The camera focuses on the pencil as it moves gently, its eraser end tapping against the desk, causing it to shift slightly in random directions. The pencil continues its quiet movement, rolling aimlessly as the desk remains still, the sound of its soft tapping filling the space.
+            </div>
+          </figcaption>
+        </figure>
+        
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_hunyuan_4.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_cogvideox_4.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_videorepa_4.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> A crane gently lifts a pallet of bricks. (Detail: In a sun-drenched industrial yard, a towering yellow crane, its arm adorned with a sturdy hook, gracefully lifts a pallet of neatly stacked red bricks. The camera captures the scene from a static position, allowing the viewer to appreciate the meticulous choreography of the crane's movements as it delicately raises the heavy load. The bricks, arranged in a precise grid, are bathed in the warm glow of the golden-hour light, casting gentle shadows that dance across the surface. The crane's arm, a testament to its strength, glides smoothly upward, revealing the intricate details of the pallet's construction. As the camera remains fixed, the crane's arm ascends steadily, showcasing the harmonious interplay between the machine and its load, while the surrounding industrial landscape, with its scattered debris and weathered surfaces, adds depth to the scene, evoking a sense of industriousness and order.)
+          </figcaption> -->
+          <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+            <button class="toggle-detail-btn" aria-expanded="false">
+              <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A crane gently lifts a pallet of bricks.</span>
+            </button>
+            <div class="detail-text">
+              Detail: In a sun-drenched industrial yard, a towering yellow crane, its arm adorned with a sturdy hook, gracefully lifts a pallet of neatly stacked red bricks. The camera captures the scene from a static position, allowing the viewer to appreciate the meticulous choreography of the crane's movements as it delicately raises the heavy load. The bricks, arranged in a precise grid, are bathed in the warm glow of the golden-hour light, casting gentle shadows that dance across the surface. The crane's arm, a testament to its strength, glides smoothly upward, revealing the intricate details of the pallet's construction. As the camera remains fixed, the crane's arm ascends steadily, showcasing the harmonious interplay between the machine and its load, while the surrounding industrial landscape, with its scattered debris and weathered surfaces, adds depth to the scene, evoking a sense of industriousness and order.
+            </div>
+          </figcaption>
+        </figure>
+
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_hunyuan_5.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_cogvideox_5.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_videorepa_5.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> Two people stretch a bungee cord, extending it to its maximum length. (Detail: In a sun-drenched outdoor setting, two individuals clad in casual attire—one in a vibrant red shirt and the other in a light blue top—stand poised on a lush green lawn, framed by a backdrop of verdant trees and a serene blue sky. The camera captures a static, close-up view, focusing on their hands as they grasp a long, black bungee cord, its elastic nature stretching taut between them. The man in red, with a determined expression, extends his arms to the fullest, while his companion mirrors his effort, their synchronized movements creating a dynamic tension. The cord, glistening under the sunlight, stretches to its maximum length, revealing the strength and flexibility of the material. As they maintain this intense pose, the scene radiates a sense of camaraderie and shared purpose, inviting viewers to appreciate the artistry of human interaction and the beauty of nature.)
+          </figcaption> -->
+          <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+            <button class="toggle-detail-btn" aria-expanded="false">
+              <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> Two people stretch a bungee cord, extending it to its maximum length.</span>
+            </button>
+            <div class="detail-text">
+              Detail: In a sun-drenched outdoor setting, two individuals clad in casual attire—one in a vibrant red shirt and the other in a light blue top—stand poised on a lush green lawn, framed by a backdrop of verdant trees and a serene blue sky. The camera captures a static, close-up view, focusing on their hands as they grasp a long, black bungee cord, its elastic nature stretching taut between them. The man in red, with a determined expression, extends his arms to the fullest, while his companion mirrors his effort, their synchronized movements creating a dynamic tension. The cord, glistening under the sunlight, stretches to its maximum length, revealing the strength and flexibility of the material. As they maintain this intense pose, the scene radiates a sense of camaraderie and shared purpose, inviting viewers to appreciate the artistry of human interaction and the beauty of nature.
+            </div>
+          </figcaption>
+        </figure>
+
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_hunyuan_6.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_cogvideox_6.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/main_results/mn_videorepa_6.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> A player kicks a soccer ball... (In a sun-drenched urban landscape, a dynamic soccer match unfolds, captured with cinematic precision. The camera, positioned at a low angle, frames a player clad in a vibrant blue jersey, their muscular legs poised for action. As they kick the ball with explosive force, the camera remains static, allowing the viewer to fully absorb the power and precision of the strike. The ball soars through the air, its trajectory marked by a graceful arc, before colliding with a sturdy lamp post, its metal surface glinting in the sunlight. The impact sends the ball ricocheting at a sharp angle, its path illuminated by the golden-hour glow. The surrounding urban backdrop, with its towering buildings and lush greenery, enhances the scene's energy, while the player's determined expression underscores the intensity of the moment, encapsulating the thrill of competition in a single, breathtaking shot.)
+          </figcaption> -->
+          <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+            <button class="toggle-detail-btn" aria-expanded="false">
+              <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A player kicks a soccer ball...</span>
+            </button>
+            <div class="detail-text">
+              Detail: In a sun-drenched urban landscape, a dynamic soccer match unfolds, captured with cinematic precision. The camera, positioned at a low angle, frames a player clad in a vibrant blue jersey, their muscular legs poised for action. As they kick the ball with explosive force, the camera remains static, allowing the viewer to fully absorb the power and precision of the strike. The ball soars through the air, its trajectory marked by a graceful arc, before colliding with a sturdy lamp post, its metal surface glinting in the sunlight. The impact sends the ball ricocheting at a sharp angle, its path illuminated by the golden-hour glow. The surrounding urban backdrop, with its towering buildings and lush greenery, enhances the scene's energy, while the player's determined expression underscores the intensity of the moment, encapsulating the thrill of competition in a single, breathtaking shot.
+            </div>
+          </figcaption>
+        </figure>
+
+
+        <!-- Supplementary videos -->
+        <!-- <h5 class="text" style="text-align: center; font-size: 1.5em; margin-bottom: 15px; margin-top: 30px;">CogVideoX vs. VideoREPA (ours)</h5> -->
+        <h5 class="text" style="text-align: center; font-size: 1.5em; margin-bottom: 15px;">
+          
+          <span class="method-tag">CogVideoX</span> vs.
+          <span class="method-tag">VideoREPA</span>
+        </h5>
+        <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+          <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_01.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_01.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A credit card swipes through the machine. (Detail: The video shows a close-up of a person's hand holding a standard plastic credit card by its edges. The hand smoothly slides the card's magnetic stripe through the vertical reader slot on a grey electronic payment terminal located on a shop counter. A brief confirming beep sound might accompany the successful swipe.)
+            </figcaption> -->
+          <!-- <figure style="text-align: center; margin-bottom: 5px;"> -->
+            <figcaption style="margin-top: 0px; margin-bottom: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A credit card swipes through the machine.</span>
+              </button>
+              <div class="detail-text">
+                Detail: On a tiled floor, a clear glass tumbler slips from a countertop and crashes downward. Upon hitting the hard surface, it breaks into sharp fragments with a loud, high-pitched shatter. Tiny pieces scatter in all directions, some bouncing slightly before coming to rest.
+              </div>
+            </figcaption>
+            <!-- </figure> -->
+        </div>
+
+
+
+        <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+          <!-- </figure> -->
+      
+          <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_02.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_02.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A dog playfully bats at a balloon... (Detail: In a sun-drenched backyard, a playful golden retriever bounds towards a vibrant red balloon, its tail wagging with excitement. The dog, adorned with a stylish blue collar, leaps with joy, its paws reaching for the balloon as it bounces against a rustic wooden fence. The camera captures the scene in a static shot, allowing the dog's playful antics to unfold, as it repeatedly bats at the balloon, its movements filled with boundless energy. The balloon, tethered to a fence post, dances in the air, occasionally brushing against the dog's nose, sparking a delightful game of chase. As the dog's enthusiasm peaks, it lunges forward, causing the balloon to pop dramatically, leaving behind a burst of red confetti that floats gently to the ground. The serene backdrop of lush greenery and a clear blue sky enhances the joyful atmosphere, encapsulating a moment of pure canine delight.)
+            </figcaption> -->
+            <figcaption style="margin-top: 0px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A dog playfully bats at a balloon...</span>
+              </button>
+              <div class="detail-text">
+                Detail: On a tiled floor, a clear glass tumbler slips from a countertop and crashes downward. Upon hitting the hard surface, it breaks into sharp fragments with a loud, high-pitched shatter. Tiny pieces scatter in all directions, some bouncing slightly before coming to rest.
+              </div>
+            </figcaption>
+        </div>
+        
+        <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+          <!-- </figure> -->
+            <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_03.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_03.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A credit card swipes through the machine. (Models: CogVideoX, VideoREPA)
+            </figcaption> -->
+            <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A hot iron pressing over a crumpled shirt.</span>
+              </button>
+              <div class="detail-text">
+                Detail: In a laundry room, a wrinkled cotton shirt is laid out on an ironing board. A hot steam iron glides smoothly across the fabric, pressing down firmly. As it passes over the folds, the wrinkles vanish, leaving behind a flat, smooth surface. Steam rises in gentle wisps, and the fabric takes on a crisp, refreshed look.
+              </div>
+            </figcaption>
+        </div>    
+          <!-- </figure> -->
+        <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+          <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_04.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_04.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A dog playfully bats at a balloon... (Models: CogVideoX, VideoREPA)
+            </figcaption> -->
+            <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A man throwing a stone across a river.</span>
+              </button>
+              <div class="detail-text">
+                Detail: On the grassy edge of a wide, gently flowing river, a man stands with his arm pulled back, gripping a smooth stone. He swings his arm forward in a swift, controlled motion and releases the stone into the air. The camera follows its flight as it arcs across the river, skipping once or twice on the water's surface before finally sinking. Ripples expand outward, and the man watches calmly, framed by tall trees and the distant opposite bank.
+              </div>
+            </figcaption>
+        </div>  
+          <!-- </figure> -->
+          <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">  
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_05.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_05.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A credit card swipes through the machine. (Models: CogVideoX, VideoREPA)
+            </figcaption> -->
+            <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A message contained bottle sails across the open sea.</span>
+              </button>
+              <div class="detail-text">
+                Detail: The video shows a clear glass bottle, tightly corked with a rolled piece of paper visible inside, bobbing gently on the surface of a vast, deep blue open sea under a partly cloudy sky. The bottle drifts slowly but steadily with the ocean currents, emphasizing its solitary journey across the expansive waters.
+              </div>
+            </figcaption>
+          </div>
+        <!-- </figure> -->
+
+        <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+          <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_06.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_06.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A dog playfully bats at a balloon... (Models: CogVideoX, VideoREPA)
+            </figcaption> -->
+            <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A person mops up a puddle of water on a concrete floor...</span>
+              </button>
+              <div class="detail-text">
+                Detail: In a dimly lit industrial space, a solitary figure clad in a dark jacket and a white cap bends over a large, rectangular puddle of water on a textured concrete floor. The scene is bathed in a soft, diffused light that casts gentle shadows, enhancing the stark contrast between the wet surface and the dry surroundings. As the camera remains static, the individual meticulously glides a mop across the floor, the water retreating in a mesmerizing dance of absorption. Each stroke reveals the intricate patterns of the concrete, while the water's surface shimmers with reflections of the overhead lights, creating a dynamic interplay of light and shadow. The atmosphere is charged with a sense of purpose, as the mop's rhythmic movements evoke a profound focus, encapsulating the essence of diligent labor in this minimalist setting.
+              </div>
+            </figcaption>
+          </div>
+        <!-- </figure> -->
+        <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_07.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_07.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A credit card swipes through the machine. (Models: CogVideoX, VideoREPA)
+            </figcaption> -->
+            <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A person... pouring the remaining beer into a waiting shot glass.</span>
+              </button>
+              <div class="detail-text">
+                Detail: In a vibrant, dimly lit bar, a man in a dark shirt and a striking red cap stands confidently, his hand poised around a large, frosted beer stein. The camera captures him in a close-up, his expression focused as he tilts the stein, allowing the golden liquid to cascade into a small, clear shot glass positioned on the bar counter. The scene is illuminated by warm, ambient lighting that casts a soft glow, enhancing the rich textures of the beer and the polished surface of the bar. As the stein tips, the beer flows gracefully, creating a mesmerizing cascade that fills the shot glass, while the man's steady hand ensures a smooth pour. The background remains softly blurred, drawing the viewer's attention to the intricate details of the beer's movement and the man's deliberate actions, culminating in a satisfying conclusion as the shot glass is filled to the brim.
+              </div>
+            </figcaption>
+          </div>
+        <!-- </figure> -->
+
+        <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+          <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_08.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_08.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A dog playfully bats at a balloon... (Models: CogVideoX, VideoREPA)
+            </figcaption> -->
+            <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A single scull rower uses one oar to propel a boat.</span>
+              </button>
+              <div class="detail-text">
+                Detail: In a serene, sunlit river scene, a solitary rower glides through the tranquil waters, their sleek single scull boat cutting through the glassy surface. The camera captures a static, wide-angle view, showcasing the rower's focused demeanor as they skillfully maneuver the oar, creating a rhythmic, rippling wake that dances behind the boat. The riverbank, adorned with lush greenery, frames the scene, while the clear blue sky above reflects on the water, enhancing the peaceful ambiance. The rower's fluid movements, accentuated by the subtle play of light, evoke a sense of harmony with nature, as they navigate the calm waters with precision and grace, embodying the essence of solitude and tranquility in this idyllic setting.
+              </div>
+            </figcaption>
+          </div>
+        <!-- </figure> -->
+        <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_09.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_09.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A credit card swipes through the machine. (Models: CogVideoX, VideoREPA)
+            </figcaption> -->
+            <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A spray bottle sprays cleaning solution onto a countertop.</span>
+              </button>
+              <div class="detail-text">
+                Detail: The video displays a hand holding a transparent spray bottle containing a blue cleaning fluid. The nozzle is directed towards a smudged white kitchen countertop. The trigger is pulled, releasing a fine, wide mist of the blue liquid which visibly settles onto the countertop surface, wetting it evenly in preparation for cleaning.
+              </div>
+            </figcaption>
+          </div>
+      <!-- </figure> -->
+
+      <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+        <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_10.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_10.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A dog playfully bats at a balloon... (Models: CogVideoX, VideoREPA)
+            </figcaption> -->
+            <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong>  ...a globe is poked, causing it to spin on its axis.</span>
+              </button>
+              <div class="detail-text">
+                Detail: In a serene, minimalist setting, a sleek, metallic object resembling a globe rests on a flat surface, its surface adorned with intricate geographical features and vibrant colors that depict various countries. The camera, positioned at a static angle, captures the globe's upper hemisphere in exquisite detail, showcasing the delicate balance of land and sea. As the scene unfolds, a pair of hands, clad in a light-colored glove, gracefully approaches the globe, gently pressing a finger onto its surface. This subtle interaction triggers a smooth rotation, revealing the globe's underside, where a striking red and white pattern emerges, hinting at a unique design. The lighting is soft and even, enhancing the globe's reflective qualities, while the background remains intentionally blurred, drawing the viewer's focus to the globe's mesmerizing rotation. This cinematic moment encapsulates the beauty of exploration and discovery, inviting the audience to engage with the world in a captivating visual narrative.
+              </div>
+            </figcaption>
+        </div>
+
+          <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_11.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_11.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A credit card swipes through the machine. (Models: CogVideoX, VideoREPA)
+            </figcaption> -->
+            <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> Parallel bars are shown from a side view with an athlete performing dips.</span>
+              </button>
+              <div class="detail-text">
+                Detail: In this captivating sports video, the camera captures a dynamic sequence of an athlete executing a series of dips on parallel bars, showcasing their strength and agility. The scene opens with a static side view, revealing the athlete's powerful upper body as they grip the bars, their arms fully extended, poised for the first dip. As they begin their descent, the camera remains steady, allowing viewers to appreciate the controlled motion of their body, which gracefully lowers and rises in a rhythmic pattern. The background is softly blurred, drawing focus to the athlete's muscular arms and the intense concentration on their face, illuminated by the warm, golden-hour light that casts a gentle glow across the scene. This cinematic approach highlights the athlete's dedication and skill, immersing the audience in the raw power and precision of their performance.
+              </div>
+            </figcaption>
+          </div>
+      <!-- </figure> -->
+
+      <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+        <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_cogvideox_12.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <video poster="" autoplay controls muted width="48%">
+              <source src="static/videos/supple_comparison/supp_videorepa_12.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <!-- <figcaption style="margin-top: 8px; text-align: left;">
+              <strong>Prompt:</strong> A dog playfully bats at a balloon... (Models: CogVideoX, VideoREPA)
+            </figcaption> -->
+            <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+              <button class="toggle-detail-btn" aria-expanded="false">
+                <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> Perfume spraying from a perfume bottle.</span>
+              </button>
+              <div class="detail-text">
+                Detail: In a softly lit space, a sleek perfume bottle is held delicately in hand. With a press of the nozzle, a fine mist bursts into the air, dispersing in a cloud of tiny, glistening droplets. The scent lingers invisibly, while the mist catches the light before fading.
+              </div>
+            </figcaption>
+
+        </div>
+
+        
+
+      <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+        <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+          <video poster="" autoplay controls muted width="48%">
+            <source src="static/videos/supple_comparison/supp_cogvideox_13.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <video poster="" autoplay controls muted width="48%">
+            <source src="static/videos/supple_comparison/supp_videorepa_13.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> A credit card swipes through the machine. (Models: CogVideoX, VideoREPA)
+          </figcaption> -->
+          <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+            <button class="toggle-detail-btn" aria-expanded="false">
+              <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> A person uses a low heat setting on the hairdryer to gently dry their fine hair.</span>
+            </button>
+            <div class="detail-text">
+              Detail: In a softly lit bathroom, a woman with shoulder-length, fine hair stands before a large, rectangular mirror, her reflection capturing the essence of her serene morning routine. The camera, positioned at a slight angle, frames her upper body, showcasing her casual attire—a light blue shirt and a delicate necklace that glimmers subtly in the warm, diffused light. As she gently lifts her hair with her left hand, her right hand expertly wields a sleek, white hairdryer, its nozzle directed towards her hair. The dryer, set to a low heat setting, emits a gentle, rhythmic sound, creating a soothing ambiance. With a focused expression, she carefully dries her hair, ensuring each section is evenly treated, while the mirror reflects her concentration and the soft, diffused light that bathes the scene in a tranquil glow. The static camera captures this intimate moment, highlighting the meticulous care she takes in her grooming ritual.
+            </div>
+          </figcaption>
+      </div>
+        <!-- </figure> -->
+        <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+        <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+          <video poster="" autoplay controls muted width="48%">
+            <source src="static/videos/supple_comparison/supp_cogvideox_14.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <video poster="" autoplay controls muted width="48%">
+            <source src="static/videos/supple_comparison/supp_videorepa_14.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> A dog playfully bats at a balloon... (Models: CogVideoX, VideoREPA)
+          </figcaption> -->
+          <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+            <button class="toggle-detail-btn" aria-expanded="false">
+              <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> Detergent flowing into a bucket of water.</span>
+            </button>
+            <div class="detail-text">
+              Detail: In a utility room, a bottle of liquid detergent is tipped over a large plastic bucket filled with water. A ribbon of thick, colorful soap pours from the bottle’s opening and mixes into the water below. Bubbles begin to form on the surface as the detergent spreads, creating swirling patterns of foam and shimmer.
+            </div>
+          </figcaption>
+        <!-- </figure> -->
+      </div>
+
+      <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+        <!-- <figure style="text-align: center; margin: 0; width: 48%;"> -->
+          <video poster="" autoplay controls muted width="48%">
+            <source src="static/videos/supple_comparison/supp_cogvideox_15.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <video poster="" autoplay controls muted width="48%">
+            <source src="static/videos/supple_comparison/supp_videorepa_15.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">
+            <strong>Prompt:</strong> A dog playfully bats at a balloon... (Models: CogVideoX, VideoREPA)
+          </figcaption> -->
+          <figcaption style="margin-top: 8px; text-align: left;" class="toggle-figcaption">
+            <button class="toggle-detail-btn" aria-expanded="false">
+              <i class="fas fa-caret-right triangle-icon"></i><span class="button-text"> <strong>Prompt:</strong> Soap bar sliding off the ceramic dish. </span>
+            </button>
+            <div class="detail-text">
+              Detail: In a tiled bathroom, a wet soap bar rests precariously on a sloped ceramic dish. As water runs beneath it, the slick bar shifts and slowly slides off the edge. It lands with a soft thud on the sink or counter, leaving a faint trail of bubbles behind.
+            </div>
+          </figcaption>
+        <!-- </figure> -->
+      </div>
+      
+        <!-- Separated results -->
+        <h5 class="text" style="text-align: center; font-size: 1.5em; margin-bottom: 15px; margin-top: 30px;">More Videos Generated by VideoREPA</h5>
+      
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/separate results/videorepa_01.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/separate results/videorepa_02.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/separate results/videorepa_03.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">Example Set 1</figcaption> -->
+        </figure>
+
+      
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/separate results/videorepa_04.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/separate results/videorepa_08.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/separate results/videorepa_06.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">Example Set 2</figcaption> -->
+        </figure>
+
+        <figure style="text-align: center; margin-bottom: 20px;">
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/separate results/videorepa_07.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/separate results/videorepa_09.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          &nbsp;
+          <video poster="" autoplay controls muted width="32%">
+            <source src="static/videos/separate results/videorepa_10.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <!-- <figcaption style="margin-top: 8px; text-align: left;">Example Set 3</figcaption> -->
+        </figure>
+
+      
+      </div>
+    
+
+    <p class="text abstract" style="margin-top: 5%;">
+        <span style="color: blue;"><strong>Background</strong></span><br>
+        Recent advancements in text-to-video (T2V) diffusion models have enabled high-fidelity and realistic video synthesis. However, current T2V models often struggle to generate physically plausible content due to their limited inherent ability to accurately understand physics. While representations within T2V models possess some capacity for physics understanding, they lag significantly behind those from recent video self-supervised learning methods. This gap in physics comprehension motivates the need for novel approaches to enhance the physical realism of generated videos through knowledge transfer from video understanding foundation models.
+    </p>
+
+    <!-- <d-figure id="figure-1">
+        <figure>
+            <img data-zoomable="" draggable="false" src="static/image/teaser_final_00.jpg" alt="VideoREPA Teaser Figure" width="100%">
+            <figcaption>
+                <strong>Figure 1:</strong> <strong>VideoREPA Framework Overview.</strong> Left: Visual comparison showing CogVideoX baseline, CogVideoX+REPA, and our VideoREPA results. Right: Physics understanding evaluation on Object Contact Prediction task demonstrating the gap between VideoMAEv2 and CogVideoX, which VideoREPA successfully bridges.
+            </figcaption>
+        </figure>
+    </d-figure> -->
+    
+
+    <p class="text abstract" style="margin-top: 3%;">
+        <span style="color: blue;"><strong>Contribution</strong></span><br>
+        We propose VideoREPA, a novel framework that distills physics understanding capability from video understanding foundation models into T2V models by aligning token-level relations. Our contributions can be summarized as follows:
+        <ul class="text" style="margin-top: 0%; padding-left: 10%;">
+            <li style="margin-bottom: 0;">1. <a href="#physics_gap"><strong>Physics Understanding Gap Identification</strong></a>: We identify and quantify the significant physics understanding gap between self-supervised video foundation models and text-to-video diffusion models.</li>
+            <li style="margin-bottom: 0;">2. <a href="#trd_loss"><strong>Token Relation Distillation (TRD) Loss</strong></a>: We introduce a novel TRD loss that effectively distills physics knowledge through spatio-temporal token relation alignment, overcoming key limitations of direct REPA application.</li>
+            <li style="margin-bottom: 0;">3. <a href="#videorepa_framework"><strong>VideoREPA Framework</strong></a>: We present the first representation alignment method specifically designed for finetuning video diffusion models and injecting physical knowledge into T2V generation.</li>
+        </ul>
+    </p>
+
+
+    <p class="text abstract" style="margin-top: 3%;">
+        <span style="color: blue;"><strong><a href="#validation">Validation</a></strong></span><br>
+        Our method significantly improves physics commonsense in video generation. VideoREPA achieves a state-of-the-art Physical Commonsense (PC) score of 40.1 on VideoPhy, representing a <strong>24.1% improvement over the CogVideoX baseline</strong>.
+    </p>
+
+    <!-- <div id="method_section" class="section">
+        <h1 class="text">Method</h1>
+    
+        <h2 id="physics_gap" class="text">Physics Understanding Gap Analysis</h2>
+        <p class="text">
+            Despite remarkable progress in text-to-video (T2V) diffusion models, we observe a significant gap in physics understanding between T2V models and self-supervised video foundation models (VFMs). For example, CogVideoX-2B (2B parameters) underperforms VideoMAEv2-B (86M parameters) on standard physics reasoning benchmarks, even with much larger capacity. This motivates our approach to transfer the physics knowledge from a pre-trained VFM to T2V models, enabling more physically plausible video generation.
+        </p>
+    
+        <h2 id="trd_loss" class="text">Token Relation Distillation (TRD) Loss</h2>
+        <p class="text">
+            To bridge this gap, we introduce the <b>Token Relation Distillation (TRD) loss</b>, which distills spatio-temporal relational knowledge from a VFM into the T2V model. Unlike traditional representation alignment (REPA), TRD explicitly considers both intra-frame spatial and inter-frame temporal token relations, providing soft guidance for finetuning pre-trained T2V models.
+        </p>
+        <p class="text">
+            Specifically, for a video with $f$ frames and $h \times w$ spatial positions per frame, we compute the normalized pairwise similarity (cosine similarity) among tokens for both the VFM and the T2V model. For spatial relations in frame $d$:
+        </p>
+        <div style="text-align: center; margin: 1em 0;">
+            $$y_{d,i,j}^{\text{spatial}} = \frac{y_{d,i}^v \cdot y_{d,j}^v}{\|y_{d,i}^v\| \|y_{d,j}^v\|}$$
+        </div>
+        <p class="text">
+            For temporal relations across frames $d$ and $e$:
+        </p>
+        <div style="text-align: center; margin: 1em 0;">
+            $$y_{d,i,j,e}^{\text{temp}} = \frac{y_{d,i}^v \cdot y_{e,j}^v}{\|y_{d,i}^v\| \|y_{e,j}^v\|}$$
+        </div>
+        <p class="text">
+            Here $y_{d,i}^v$ denotes the VFM feature at frame $d$, position $i$ (same for T2V features $h_{d,i}$).
+        </p>
+        <p class="text">
+            The TRD loss is defined as the L1 distance between the spatial and temporal relation matrices from VFM and T2V features:
+        </p>
+        <div style="text-align: center; margin: 1em 0;">
+            $$\mathcal{L}_{\text{TRD}} = \frac{1}{f(hw)^2} \sum_{d=1}^{f} \sum_{i,j=1}^{hw} \big| h_{d,i,j}^{\text{spatial}} - y_{d,i,j}^{\text{spatial}} \big| + \frac{1}{f(hw)^2(f-1)} \sum_{d \neq e} \sum_{i,j=1}^{hw} \big| h_{d,i,j,e}^{\text{temp}} - y_{d,i,j,e}^{\text{temp}} \big|$$
+        </div>
+        <p class="text">
+            The overall training objective is:
+        </p>
+        <div style="text-align: center; margin: 1em 0;">
+            $$\mathcal{L} = \mathcal{L}_{\text{diff}} + \lambda \mathcal{L}_{\text{TRD}}$$
+        </div>
+        <p class="text">
+            where $\mathcal{L}_{\text{diff}}$ is the standard diffusion loss and $\lambda$ is a balancing hyperparameter.
+        </p> -->
+    
+
+    </div>
+
+    <div id="validation" class="section">
+        <!-- <h1 class="text">Validation</h1> -->
+        
+        <h2 class="text">Experiment Results</h2>
+        <p class="text">
+            We evaluate VideoREPA on two comprehensive physics benchmarks: VideoPhy and VideoPhy2. Our method demonstrates significant improvements in both Semantic Adherence (SA) and Physical Commonsense (PC) scores compared to baseline models. Results show VideoREPA achieves state-of-the-art performance across three interaction types. Compared to its baseline CogVideoX, <strong>VideoREPA-5B improves the Physical Commonsense (PC) score by 24.1% overall (specifically, 42.9% for Solid-Solid, 16.7% for Solid-Fluid, and 20.6% for Fluid-Fluid)</strong>. Our method also surpasses WISA, a technique designed for enhancing physics commonsense in video generation. Notably, while WISA shows efficacy when trained on the physics-explicit dataset WISA-32K, it struggles to generalize to open-domain datasets like Koala-36M. In contrast, VideoREPA, trained on an open-domain dataset, demonstrates clear improvements over WISA on such data (e.g., PC score of 40.1 vs. WISA's 33 on Koala-36M).
+        </p>
+
+
+        <div id="tab:videophy_results" style="display: flex; flex-direction: column; align-items: center;">
+            <div class="table-container">
+                <table class="data-table">
+                    <caption style="caption-side: top; text-align: left; margin-bottom: 10px;">
+                        <strong>Table 1: Results on VideoPhy benchmark.</strong> † denotes results reported from WISA and * denotes detailed prompt input. Semantic <br> Adherence (SA) measures video-text alignment and fidelity. <strong>Importantly</strong>, Physical Commonsense (PC) measures whether generated <br> videos follow physics laws in the real-world.
+                    </caption>
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Methods</th>
+                            <th colspan="2">Solid-Solid</th>
+                            <th colspan="2">Solid-Fluid</th>
+                            <th colspan="2">Fluid-Fluid</th>
+                            <th colspan="2">Overall</th>
+                        </tr>
+                        <tr>
+                            <th>SA</th>
+                            <th>PC</th>
+                            <th>SA</th>
+                            <th>PC</th>
+                            <th>SA</th>
+                            <th>PC</th>
+                            <th>SA</th>
+                            <th>PC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>VideoCrafter2</td>
+                            <td>50.4</td>
+                            <td>32.2</td>
+                            <td>50.7</td>
+                            <td>27.4</td>
+                            <td>48.1</td>
+                            <td>29.1</td>
+                            <td>50.3</td>
+                            <td>29.7</td>
+                        </tr>
+                        <tr>
+                            <td>DreamMachine</td>
+                            <td>55.1</td>
+                            <td>21.7</td>
+                            <td>59.6</td>
+                            <td>23.3</td>
+                            <td>58.2</td>
+                            <td>18.2</td>
+                            <td>57.5</td>
+                            <td>21.8</td>
+                        </tr>
+                        <tr>
+                            <td>LaVIE</td>
+                            <td>40.8</td>
+                            <td>18.3</td>
+                            <td>48.6</td>
+                            <td>37.0</td>
+                            <td>69.1</td>
+                            <td>50.9</td>
+                            <td>48.7</td>
+                            <td>31.5</td>
+                        </tr>
+                        <tr>
+                            <td>Cosmos-Diffusion-7B†</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>57</td>
+                            <td>18</td>
+                        </tr>
+                        <tr>
+                            <td>HunyuanVideo*</td>
+                            <td>55.2</td>
+                            <td>16.1</td>
+                            <td>67.1</td>
+                            <td>30.1</td>
+                            <td>54.5</td>
+                            <td>54.5</td>
+                            <td>60.2</td>
+                            <td>28.2</td>
+                        </tr>
+                        <tr style="border-top: 2px solid #666;">
+                            <td>PhyT2V†</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>61</td>
+                            <td>37</td>
+                        </tr>
+                        <tr>
+                            <td>WISA (Koala dataset)†</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>62</td>
+                            <td>33</td>
+                        </tr>
+                        <tr>
+                            <td>WISA (WISA dataset)†</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>67</td>
+                            <td>38</td>
+                        </tr>
+                        <tr style="border-top: 2px solid #666; color: #888;">
+                            <td>CogVideoX-2B</td>
+                            <td>37.8</td>
+                            <td>12.6</td>
+                            <td>67.1</td>
+                            <td>30.1</td>
+                            <td>45.5</td>
+                            <td>50.9</td>
+                            <td>51.6</td>
+                            <td>26.2</td>
+                        </tr>
+                        <tr>
+                            <td>CogVideoX-2B*</td>
+                            <td>49.6</td>
+                            <td>13.3</td>
+                            <td>71.2</td>
+                            <td>28.1</td>
+                            <td>60.0</td>
+                            <td>50.9</td>
+                            <td>60.5</td>
+                            <td>25.6</td>
+                        </tr>
+                        <tr style="background-color: #e6f3ff; font-weight: bold;">
+                            <td>VideoREPA-2B*</td>
+                            <td>52.4</td>
+                            <td>18.2</td>
+                            <td>77.4</td>
+                            <td>32.2</td>
+                            <td>60.0</td>
+                            <td>52.7</td>
+                            <td>64.2</td>
+                            <td>29.7</td>
+                        </tr>
+                        <tr style="border-top: 2px solid #666; color: #888;">
+                            <td>CogVideoX-5B†</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>60</td>
+                            <td>33</td>
+                        </tr>
+                        <tr style="color: #888;">
+                            <td>CogVideoX-5B</td>
+                            <td>53.1</td>
+                            <td>18.2</td>
+                            <td>75.3</td>
+                            <td>32.9</td>
+                            <td>56.4</td>
+                            <td>61.8</td>
+                            <td>63.1</td>
+                            <td>31.4</td>
+                        </tr>
+                        <tr>
+                            <td>CogVideoX-5B*</td>
+                            <td style="font-weight: bold;">62.9</td>
+                            <td>19.6</td>
+                            <td>76.0</td>
+                            <td>33.6</td>
+                            <td>72.7</td>
+                            <td>61.8</td>
+                            <td>70.0</td>
+                            <td>32.3</td>
+                        </tr>
+                        <tr style="background-color: #e6f3ff;">
+                            <td style="font-weight: bold;">VideoREPA-5B*</td>
+                            <td>58.0</td>
+                            <td style="font-weight: bold;">28.0</td>
+                            <td style="font-weight: bold;">82.9</td>
+                            <td style="font-weight: bold;">39.0</td>
+                            <td style="font-weight: bold;">80.0</td>
+                            <td style="font-weight: bold;">74.5</td>
+                            <td style="font-weight: bold;">72.1</td>
+                            <td style="font-weight: bold;">40.1</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <p class="text">
+          We further assess physical commonsense on VideoPhy2, an action-centric benchmark featuring complex human-object interactions. Following its protocol, Semantic Adherence (SA) and Physical Commonsense (PC) scores are the proportion of videos rated $\geq 4$ for each metric. Our VideoREPA (2B) demonstrates a significant improvement over the baseline by 4.57 points, further validating the effectiveness of our proposed method.
+        </p>
+        
+        <!-- <h2 class="text">Qualitative Results</h2>
+        <p class="text">
+            We present qualitative comparisons of videos generated by different models in Figure 3. Our VideoREPA achieves superior physics plausibility compared to HunyuanVideo and CogVideoX. Specifically, in the "pencil roll" scenario, videos from HunyuanVideo and CogVideoX often depict pencils rolling in a manner inconsistent with rigid body motion laws. In contrast, VideoREPA showcases physically consistent and stable motion. Similarly, for the "crane lifting bricks" example, VideoREPA accurately portrays the crane maintaining a physical connection while lifting the pallet. The other methods, however, tend to generate videos where the bricks are implausibly suspended without any visible means of support from the crane.
+        </p>
+        
+        <div style="text-align: center; margin: 2em 0;">
+            <img src="static/image/qualitative.png" alt="Figure 3: Qualitative Comparison" style="width: 90%; max-width: 800px; margin: 1em 0;">
+            <p style="font-style: italic; margin-top: 0.5em;">
+                <strong>Figure 3:</strong> Qualitative comparison between VideoREPA and baseline methods showing enhanced physical plausibility in generated videos.
+            </p>
+        </div>
+        
+        <p class="text">
+            These results demonstrate that VideoREPA successfully bridges the physics understanding gap between video foundation models and text-to-video generation models, leading to more physically plausible and realistic video generation.
+        </p> -->
+
+        <h2 class="text">Conclusion</h2>
+        <p class="text">
+          In this paper, we presented VideoREPA, a framework designed to transfer physics knowledge from Video Foundation Models (VFMs) to text-to-video diffusion models (VDMs) via token-level relation distillation. We first identified a significant physics understanding performance gap between VFMs and VDMs. Subsequently, motivated by the principle that enhanced understanding facilitates higher-quality generation, we proposed the Token Relation Distillation (TRD) loss to distill physics understanding capability from pre-trained VFMs to VDMs, thereby achieving more physically plausible video generation. Extensive experiments demonstrate that VideoREPA achieves state-of-the-art generation results, exhibiting great physical commonsense in generated videos.
+        </p>
+    </div>
+
+    
+
+    </d-article>
+    <d-appendix>
+        <h3>BibTeX</h3>
+        <p class="bibtex">
+@article{videorepa,
+  title={VideoREPA: Learning Physics for Video Generation through Relational Alignment with Foundation Models},
+  author={Zhang, Xiangdong and Liao, Jiaqi and Zhang, Shaofeng and Meng, Fanqing and Wan, Xiangpeng and Yan, Junchi and Cheng, Yu},
+  journal={arXiv preprint},
+  year={2024}
+}
+        </p>
+
+        <d-footnote-list></d-footnote-list>
+        <d-citation-list></d-citation-list>
+    </d-appendix>
+    <!-- bibliography will be inlined during Distill pipeline's pre-rendering -->
+    <d-bibliography src="bibliography.bib"></d-bibliography>
+    <script src="./static/js/nav-bar.js"></script>
+    <script>
+        function toggleContent() {
+            const content = document.getElementById("twitter_container");
+            // Toggle display property
+            if (content.style.display === "none") {
+                content.style.display = "block"; // Expand
+            } else {
+                content.style.display = "none"; // Collapse
+            }
+        }
+    </script>
+</body>
+</html>
